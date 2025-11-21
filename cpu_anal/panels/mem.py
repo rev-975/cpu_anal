@@ -24,10 +24,12 @@ class MemoryPanel(Static):
 
     #ram-stats {
         margin-bottom: 2;
+        color: #ffffff;
     }
 
     #swap-stats {
         margin-top: 1;
+        color: #ffffff;
     }
     """
 
@@ -56,8 +58,8 @@ class MemoryPanel(Static):
 
             ram_bar = self._generate_bar(ram_pct, 50)
             ram_text = f"[bold #42be65]RAM[/]\n"
-            ram_text += f"{ram_bar} [#f2f4f8]{ram_pct:5.1f}%[/]\n"
-            ram_text += f"[#82cfff]Used:[/] [#f2f4f8]{ram_used_gb:6.2f}[/] [#525252]/[/] [#dde1e6]{ram_total_gb:6.2f} GB[/]\n"
+            ram_text += f"{ram_bar} [#ffffff]{ram_pct:5.1f}%[/]\n"
+            ram_text += f"[#82cfff]Used:[/] [#ffffff]{ram_used_gb:6.2f}[/] [#6272a4]/[/] [#ffffff]{ram_total_gb:6.2f} GB[/]\n"
             ram_text += f"[#82cfff]Free:[/] [#42be65]{ram_available_gb:6.2f} GB[/]"
 
             self.query_one("#ram-stats", Static).update(ram_text)
@@ -65,10 +67,10 @@ class MemoryPanel(Static):
             if swap_total_gb > 0:
                 swap_bar = self._generate_bar(swap_pct, 50)
                 swap_text = f"[bold #be95ff]SWAP[/]\n"
-                swap_text += f"{swap_bar} [#f2f4f8]{swap_pct:5.1f}%[/]\n"
-                swap_text += f"[#82cfff]Used:[/] [#f2f4f8]{swap_used_gb:6.2f}[/] [#525252]/[/] [#dde1e6]{swap_total_gb:6.2f} GB[/]"
+                swap_text += f"{swap_bar} [#ffffff]{swap_pct:5.1f}%[/]\n"
+                swap_text += f"[#82cfff]Used:[/] [#ffffff]{swap_used_gb:6.2f}[/] [#6272a4]/[/] [#ffffff]{swap_total_gb:6.2f} GB[/]"
             else:
-                swap_text = f"[bold #be95ff]SWAP[/]\n[#525252]not configured[/]"
+                swap_text = f"[bold #be95ff]SWAP[/]\n[#6272a4]not configured[/]"
 
             self.query_one("#swap-stats", Static).update(swap_text)
 

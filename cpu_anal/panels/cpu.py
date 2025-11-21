@@ -18,12 +18,12 @@ class CPUPanel(Static):
     }
 
     #cpu-overall {
-        color: #f2f4f8;
+        color: #ffffff;
         margin-bottom: 1;
     }
 
     #cpu-frequency {
-        color: #82cfff;
+        color: #ffffff;
         margin-bottom: 1;
     }
 
@@ -34,6 +34,7 @@ class CPUPanel(Static):
 
     #cpu-cores {
         margin-top: 0;
+        color: #ffffff;
     }
     """
 
@@ -65,12 +66,12 @@ class CPUPanel(Static):
         per_cpu = psutil.cpu_percent(interval=0.1, percpu=True)
 
         self.query_one("#cpu-overall", Static).update(
-            f"[bold #42be65]Total:[/] [#f2f4f8]{cpu_pct:6.2f}%[/]"
+            f"[bold #42be65]Total:[/] [#ffffff]{cpu_pct:6.2f}%[/]"
         )
 
         if freq:
             self.query_one("#cpu-frequency", Static).update(
-                f"[bold #82cfff]Freq:[/]  [#f2f4f8]{freq.current:7.0f} MHz[/]"
+                f"[bold #82cfff]Freq:[/]  [#ffffff]{freq.current:7.0f} MHz[/]"
             )
 
         sparkline = self._generate_sparkline(self.cpu_history)
@@ -86,18 +87,18 @@ class CPUPanel(Static):
                 right_idx = i + mid
 
                 left_bar = self._generate_bar(per_cpu[left_idx], 20)
-                left_line = f"[#82cfff]{left_idx:2d}[/] {left_bar} [#f2f4f8]{per_cpu[left_idx]:5.1f}%[/]"
+                left_line = f"[#82cfff]{left_idx:2d}[/] {left_bar} [#ffffff]{per_cpu[left_idx]:5.1f}%[/]"
 
                 if right_idx < len(per_cpu):
                     right_bar = self._generate_bar(per_cpu[right_idx], 20)
-                    right_line = f"[#82cfff]{right_idx:2d}[/] {right_bar} [#f2f4f8]{per_cpu[right_idx]:5.1f}%[/]"
+                    right_line = f"[#82cfff]{right_idx:2d}[/] {right_bar} [#ffffff]{per_cpu[right_idx]:5.1f}%[/]"
                     cores_text += f"{left_line}    {right_line}\n"
                 else:
                     cores_text += f"{left_line}\n"
         else:
             for i, core_pct in enumerate(per_cpu):
                 bar = self._generate_bar(core_pct, 40)
-                cores_text += f"[#82cfff]{i:2d}[/] {bar} [#f2f4f8]{core_pct:5.1f}%[/]\n"
+                cores_text += f"[#82cfff]{i:2d}[/] {bar} [#ffffff]{core_pct:5.1f}%[/]\n"
 
         self.query_one("#cpu-cores", Static).update(cores_text.rstrip())
 

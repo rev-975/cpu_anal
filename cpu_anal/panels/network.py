@@ -25,6 +25,11 @@ class NetworkPanel(Static):
 
     #network-stats {
         margin-bottom: 1;
+        color: #ffffff;
+    }
+
+    #network-interfaces {
+        color: #ffffff;
     }
     """
 
@@ -62,9 +67,9 @@ class NetworkPanel(Static):
             total_recv_str = self._format_bytes(net_io.bytes_recv)
 
             net_text = f"[bold #42be65]Traffic[/]\n"
-            net_text += f"[#3ddbd9]▼[/] [#f2f4f8]{recv_rate_str:>12}/s[/]  [#525252]total:[/] [#dde1e6]{total_recv_str:>12}[/]\n"
-            net_text += f"[#82cfff]▲[/] [#f2f4f8]{sent_rate_str:>12}/s[/]  [#525252]total:[/] [#dde1e6]{total_sent_str:>12}[/]\n"
-            net_text += f"[#525252]packets:[/] [#82cfff]↓[/][#dde1e6]{net_io.packets_recv:,}[/] [#82cfff]↑[/][#dde1e6]{net_io.packets_sent:,}[/]"
+            net_text += f"[#3ddbd9]▼[/] [#ffffff]{recv_rate_str:>12}/s[/]  [#6272a4]total:[/] [#ffffff]{total_recv_str:>12}[/]\n"
+            net_text += f"[#82cfff]▲[/] [#ffffff]{sent_rate_str:>12}/s[/]  [#6272a4]total:[/] [#ffffff]{total_sent_str:>12}[/]\n"
+            net_text += f"[#6272a4]packets:[/] [#82cfff]↓[/][#ffffff]{net_io.packets_recv:,}[/] [#82cfff]↑[/][#ffffff]{net_io.packets_sent:,}[/]"
 
             self.query_one("#network-stats", Static).update(net_text)
 
@@ -92,9 +97,9 @@ class NetworkPanel(Static):
                     io = net_if_io[iface]
                     sent = self._format_bytes(io.bytes_sent)
                     recv = self._format_bytes(io.bytes_recv)
-                    io_info = f"[#525252]tx:[/][#dde1e6]{sent:>10}[/] [#525252]rx:[/][#dde1e6]{recv:>10}[/]"
+                    io_info = f"[#6272a4]tx:[/][#ffffff]{sent:>10}[/] [#6272a4]rx:[/][#ffffff]{recv:>10}[/]"
 
-                interfaces_text += f"{status} [#82cfff]{iface:12}[/] [#f2f4f8]{ip_addr:15}[/] [#525252]{speed:12}[/] {io_info}\n"
+                interfaces_text += f"{status} [#82cfff]{iface:12}[/] [#ffffff]{ip_addr:15}[/] [#6272a4]{speed:12}[/] {io_info}\n"
 
             self.query_one("#network-interfaces", Static).update(interfaces_text.rstrip())
 

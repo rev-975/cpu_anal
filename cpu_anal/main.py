@@ -18,13 +18,14 @@ class CPUAnalysisApp(App):
 
     Header {
         background: #262626;
-        color: #f2f4f8;
+        color: #ffffff;
         border-bottom: heavy #393939;
     }
 
     Footer {
         background: #262626;
         border-top: heavy #393939;
+        color: #ffffff;
     }
 
     #main-container {
@@ -36,19 +37,19 @@ class CPUAnalysisApp(App):
 
     #top-row {
         layout: horizontal;
-        height: 35%;
+        height: 25%;
         margin-bottom: 1;
     }
 
     #middle-row {
         layout: horizontal;
-        height: 50%;
+        height: 65%;
         margin-bottom: 1;
     }
 
     #bottom-row {
         layout: horizontal;
-        height: 15%;
+        height: 10%;
     }
 
     CPUPanel {

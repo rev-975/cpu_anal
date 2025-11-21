@@ -1,7 +1,7 @@
 import psutil
 from typing import Literal
 from textual.app import ComposeResult
-from textual.containers import Vertical, Container
+from textual.containers import Vertical, Container, ScrollableContainer
 from textual.widgets import Static, Input, DataTable
 from textual.reactive import reactive
 from textual.binding import Binding
@@ -19,26 +19,47 @@ class ProcessPanel(Static):
         background: #262626;
     }
 
+    ProcessPanel > Vertical {
+        height: 100%;
+    }
+
+    ProcessPanel > Vertical > * {
+        margin: 0;
+    }
+
     #proc-info {
-        color: #dde1e6;
-        height: 1;
+        color: #ffffff;
+        height: auto;
         margin-bottom: 1;
     }
 
     #search-container {
-        height: 3;
-        margin-bottom: 1;
+        height: 1;
+        margin-bottom: 0;
+        padding: 0;
+        background: #161616;
     }
 
     #search-input {
         width: 100%;
-        border: round #525252;
+        height: 1;
+        border: none;
         background: #161616;
-        color: #f2f4f8;
+        color: #ffffff;
+        padding: 0;
+        margin: 0;
+    }
+
+    #table-container {
+        height: 1fr;
+        margin-top: 0;
+        padding-top: 0;
+        overflow-y: auto;
     }
 
     #proc-table {
-        height: 1fr;
+        width: 100%;
+        height: auto;
         background: #262626;
     }
 
@@ -50,11 +71,11 @@ class ProcessPanel(Static):
     """
 
     BINDINGS = [
-        Binding("c", "sort_cpu", "cpu", show=True),
-        Binding("m", "sort_mem", "mem", show=True),
-        Binding("p", "sort_pid", "pid", show=True),
-        Binding("k", "kill_proc", "kill", show=True),
-        Binding("/", "search", "search", show=True),
+        Binding("c", "sort_cpu", "cpu", show=False),
+        Binding("m", "sort_mem", "mem", show=False),
+        Binding("p", "sort_pid", "pid", show=False),
+        Binding("k", "kill_proc", "kill", show=False),
+        Binding("/", "search", "search", show=False),
         Binding("escape", "clear_search", "clear", show=False),
     ]
 
@@ -71,10 +92,7 @@ class ProcessPanel(Static):
         self.border_title = "  PROCESSES  "
         with Vertical():
             yield Static("", id="proc-info")
-
-            with Container(id="search-container"):
-                yield Input(placeholder="search processes...", id="search-input")
-
+            yield Input(placeholder="search processes", id="search-input")
             yield DataTable(id="proc-table", zebra_stripes=False, show_header=True)
 
             help_text = "[#42be65][[c]][/]cpu [#42be65][[m]][/]mem [#42be65][[p]][/]pid [#42be65][[/]][/]search"
@@ -134,9 +152,9 @@ class ProcessPanel(Static):
             self.processes = procs
             self.refresh_table()
 
-            info_text = f"[#42be65]●[/] [#f2f4f8]{len(procs)} processes[/] [#525252]│[/] [#82cfff]sort:[/] [#f2f4f8]{self.sort_by.upper()}[/]"
+            info_text = f"[#42be65]●[/] [#ffffff]{len(procs)} processes[/] [#6272a4]│[/] [#82cfff]sort:[/] [#ffffff]{self.sort_by.upper()}[/]"
             if self.search_query:
-                info_text += f" [#525252]│[/] [#ff7eb6]filter:[/] [#f2f4f8]{self.search_query}[/]"
+                info_text += f" [#6272a4]│[/] [#ff7eb6]filter:[/] [#ffffff]{self.search_query}[/]"
             self.query_one("#proc-info", Static).update(info_text)
 
         except Exception:
@@ -145,7 +163,13 @@ class ProcessPanel(Static):
     def refresh_table(self):
         try:
             table = self.query_one(DataTable)
-            cursor_row = table.cursor_row if table.cursor_row < len(self.processes) else 0
+            search_input = self.query_one("#search-input", Input)
+
+            # Preserve cursor position
+            cursor_row = table.cursor_row
+            if cursor_row >= len(self.processes):
+                cursor_row = max(0, len(self.processes) - 1)
+
             table.clear()
 
             for proc in self.processes:
@@ -156,7 +180,7 @@ class ProcessPanel(Static):
                 elif proc.cpu_percent >= 10:
                     cpu_color = "#82cfff"
                 else:
-                    cpu_color = "#dde1e6"
+                    cpu_color = "#ffffff"
 
                 if proc.memory_percent >= 80:
                     mem_color = "#ee5396"
@@ -165,21 +189,24 @@ class ProcessPanel(Static):
                 elif proc.memory_percent >= 10:
                     mem_color = "#82cfff"
                 else:
-                    mem_color = "#dde1e6"
+                    mem_color = "#ffffff"
 
                 table.add_row(
                     f"[#82cfff]{proc.pid}[/]",
-                    f"[#f2f4f8]{proc.name}[/]",
+                    f"[#ffffff]{proc.name}[/]",
                     f"[{cpu_color}]{proc.cpu_percent:6.1f}[/]",
                     f"[{mem_color}]{proc.memory_percent:6.1f}[/]",
-                    f"[#dde1e6]{proc.memory_mb:7.1f}M[/]",
-                    f"[#525252]{proc.status[:8]}[/]",
+                    f"[#ffffff]{proc.memory_mb:7.1f}M[/]",
+                    f"[#6272a4]{proc.status[:8]}[/]",
                     f"[#82cfff]{proc.user[:13]}[/]",
                     key=str(proc.pid)
                 )
 
-            if len(self.processes) > 0:
+            if len(self.processes) > 0 and cursor_row >= 0:
                 table.move_cursor(row=cursor_row)
+                # Only focus table if search input doesn't have focus
+                if not search_input.has_focus:
+                    table.focus()
 
         except Exception:
             pass
