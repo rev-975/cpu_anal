@@ -73,7 +73,7 @@ class CPUAnalysisApp(App):
 
     BINDINGS = [
         ("q", "quit", "quit"),
-        ("p", "change_password", "change password"),
+        ("x", "change_password", "change password"),
     ]
 
     def __init__(self):
