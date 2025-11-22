@@ -4,6 +4,7 @@ from textual.screen import Screen
 from textual.widgets import Input, Button, Static, Label
 from textual.message import Message
 from cpu_anal.auth import UserManager
+from cpu_anal.widgets.register import RegisterScreen
 
 
 class LoginScreen(Screen):
@@ -83,12 +84,14 @@ class LoginScreen(Screen):
                     id="pass-input"
                 )
                 yield Button("login", variant="primary", id="login-btn")
+                yield Button("register new user", variant="default", id="register-btn")
                 yield Static("", id="error-msg")
 
     async def on_button_pressed(self, event: Button.Pressed):
-        # handle login button click 
         if event.button.id == "login-btn":
             await self.attempt_login()
+        elif event.button.id == "register-btn":
+            await self.handle_register()
 
     async def on_input_submitted(self, event: Input.Submitted):
         """handle enter key in input fields"""
@@ -115,3 +118,35 @@ class LoginScreen(Screen):
         else:
             error_msg.update("invalid user or pass")
             pass_input.value = ""
+
+    async def handle_register(self):
+        # prompt for admin credentials before allowing registration
+        user_input = self.query_one("#user-input", Input)
+        pass_input = self.query_one("#pass-input", Input)
+        error_msg = self.query_one("#error-msg", Static)
+
+        username = user_input.value.strip()
+        pwd = pass_input.value
+
+        if not username or not pwd:
+            error_msg.update("enter admin credentials to register users")
+            return
+
+        # verify admin credentials
+        user = await self.user_manager.authenticate(username, pwd)
+
+        if not user or not user.is_admin:
+            error_msg.update("only admins can register users")
+            pass_input.value = ""
+            return
+
+        # clear inputs and open registration screen
+        user_input.value = ""
+        pass_input.value = ""
+        error_msg.update("")
+
+        def on_register_complete(username):
+            if username:
+                error_msg.update(f"✓ user '{username}' created! you can now login")
+
+        self.app.push_screen(RegisterScreen(self.user_manager), on_register_complete)

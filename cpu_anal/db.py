@@ -44,6 +44,15 @@ class Database:
             await db.commit()
 
     async def user_exists(self, user: str) -> bool:
-        # check if user exists 
+        # check if user exists
         user = await self.get_user(user)
         return user is not None
+
+    async def update_password(self, user: str, new_pass_hash: str):
+        # update user password
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "UPDATE users SET pass_hash = ? WHERE user = ?",
+                (new_pass_hash, user)
+            )
+            await db.commit()

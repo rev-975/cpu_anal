@@ -2,7 +2,6 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Header, Footer
 from cpu_anal.widgets.login import LoginScreen
-from cpu_anal.widgets.register import RegisterScreen
 from cpu_anal.panels.cpu import CPUPanel
 from cpu_anal.panels.mem import MemoryPanel
 from cpu_anal.panels.proc import ProcessPanel
@@ -74,7 +73,7 @@ class CPUAnalysisApp(App):
 
     BINDINGS = [
         ("q", "quit", "quit"),
-        ("r", "register", "register user"),
+        ("p", "change_password", "change password"),
     ]
 
     def __init__(self):
@@ -130,16 +129,12 @@ class CPUAnalysisApp(App):
         if not self.is_admin:
             self.title += " (read-only)"
 
-    def action_register(self):
-        # only admin can register users
-        if not self.is_admin:
-            self.notify("only admins can register users", severity="error", timeout=3)
-            return
-        self.push_screen(RegisterScreen(self.user_manager))
+    def action_change_password(self):
+        from cpu_anal.widgets.change_password import ChangePasswordScreen
+        self.push_screen(ChangePasswordScreen(self.user_manager, self.current_user))
 
-    def on_register_screen_register_success(self, message: RegisterScreen.RegisterSuccess):
-        # notify that user was created
-        self.notify(f"user '{message.username}' registered successfully", timeout=3)
+    def on_change_password_screen_password_changed(self, message):
+        self.notify("password changed successfully", timeout=3)
 
 
 def run():

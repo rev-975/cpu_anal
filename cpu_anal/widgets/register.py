@@ -167,14 +167,8 @@ class RegisterScreen(ModalScreen):
         # create user
         try:
             await self.user_manager.create_user(username, password, is_admin=is_admin)
-            success_msg.update(f"✓ user '{username}' created successfully!")
 
-            username_input.value = ""
-            password_input.value = ""
-            confirm_password_input.value = ""
-            admin_checkbox.value = False
-
-            self.post_message(self.RegisterSuccess(username))
+            self.dismiss(username)
 
         except Exception as e:
             error_msg.update(f"failed to create user: {str(e)}")
