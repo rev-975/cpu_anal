@@ -50,17 +50,14 @@ class ProcessPanel(Static):
         margin: 0;
     }
 
-    #table-container {
-        height: 1fr;
-        margin-top: 0;
-        padding-top: 0;
-        overflow-y: auto;
-    }
-
     #proc-table {
         width: 100%;
-        height: auto;
+        height: 100%;
         background: #262626;
+    }
+
+    #table-container {
+        height: 1fr;
     }
 
     #help-text {
@@ -93,7 +90,8 @@ class ProcessPanel(Static):
         with Vertical():
             yield Static("", id="proc-info")
             yield Input(placeholder="search processes", id="search-input")
-            yield DataTable(id="proc-table", zebra_stripes=False, show_header=True)
+            with Container(id="table-container"):
+                yield DataTable(id="proc-table", zebra_stripes=False, show_header=True)
 
             help_text = "[#42be65][[c]][/]cpu [#42be65][[m]][/]mem [#42be65][[p]][/]pid [#42be65][[/]][/]search"
             if self.is_admin:
