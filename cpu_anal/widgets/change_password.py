@@ -156,13 +156,8 @@ class ChangePasswordScreen(ModalScreen):
             new_hash = self.user_manager.hash_pass(new_password)
             await self.user_manager.db.update_password(self.current_user, new_hash)
 
-            success_msg.update("✓ password changed successfully!")
-            current_password_input.value = ""
-            new_password_input.value = ""
-            confirm_password_input.value = ""
-
             self.post_message(self.PasswordChanged())
-            self.set_timer(1.5, self.dismiss)
+            self.dismiss()
 
         except Exception as e:
             error_msg.update(f"failed to change password: {str(e)}")
