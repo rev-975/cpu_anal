@@ -74,11 +74,20 @@ class ProcessPanel(Static):
         Binding("k", "kill_proc", "kill", show=False),
         Binding("/", "search", "search", show=False),
         Binding("escape", "clear_search", "clear", show=False),
+        Binding("a", "toggle_show_all", "show all", show=False),
+        Binding("n", "next_page", "next page", show=False),
+        Binding("b", "prev_page", "prev page", show=False),
     ]
+
+    # constants for performance optimization
+    top_n_limit = 50  # number of processes to show in fast mode
+    processes_per_page = 50  # processes per page in show all mode
 
     processes = reactive([])
     sort_by: Literal["pid", "cpu", "mem"] = reactive("cpu")
     search_query = reactive("")
+    show_all = reactive(False)  # toggle between fast mode (top n) and show all mode
+    current_page = reactive(0)  # current page in show all mode
 
     def __init__(self, is_admin: bool = False, can_manage_users: bool = False):
         super().__init__()
@@ -94,11 +103,12 @@ class ProcessPanel(Static):
             with Container(id="table-container"):
                 yield DataTable(id="proc-table", zebra_stripes=False, show_header=True)
 
-            help_text = "[#42be65][[q]][/]quit [#42be65][[x]][/]pass [#42be65][[c]][/]cpu [#42be65][[m]][/]mem [#42be65][[p]][/]pid [#42be65][[/]][/]search [#42be65][[esc]][/]clear"
+            help_text = "[#42be65][[c]][/]cpu [#42be65][[m]][/]mem [#42be65][[p]][/]pid [#ff7eb6][[a]][/]mode [#be95ff][[n/b]][/]page [#42be65][[/]][/]search [#42be65][[esc]][/]clear"
             if self.is_admin:
                 help_text += " [#ee5396][[k]][/]kill"
             if self.can_manage_users:
                 help_text += " [#82cfff][[u]][/]users"
+            help_text += " [#42be65][[q]][/]quit [#42be65][[x]][/]change pass"
             yield Static(help_text, id="help-text")
 
     def on_mount(self):
@@ -123,6 +133,10 @@ class ProcessPanel(Static):
             return
         try:
             procs = []
+            # in fast mode with no search, we can optimize by limiting early
+            limit = None if (self.show_all or self.search_query) else self.top_n_limit * 3  # 3x buffer for sorting
+
+            count = 0
             for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'memory_info', "status", "username"]):
                 try:
                     info = proc.info
@@ -140,9 +154,16 @@ class ProcessPanel(Static):
                             user=info['username'] or 'N/A'
                         )
                     )
+                    count += 1
+
+                    # early exit in fast mode to avoid scanning all processes
+                    if limit and count >= limit:
+                        break
+
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
 
+            # sort all collected processes
             if self.sort_by == "cpu":
                 procs.sort(key=lambda p: p.cpu_percent, reverse=True)
             elif self.sort_by == "mem":
@@ -150,14 +171,31 @@ class ProcessPanel(Static):
             elif self.sort_by == "pid":
                 procs.sort(key=lambda p: p.pid)
 
+            # in fast mode, limit to top n after sorting
+            if not self.show_all and not self.search_query:
+                procs = procs[:self.top_n_limit]
+
             self.processes = procs
             self.refresh_table()
+            self.update_info_text()
 
-            info_text = f"[#42be65]●[/] [#ffffff]{len(procs)} processes[/] [#6272a4]│[/] [#82cfff]sort:[/] [#ffffff]{self.sort_by.upper()}[/]"
+        except Exception:
+            pass
+
+    def update_info_text(self):
+        try:
+            # update info text with mode and pagination info
+            mode_text = "[#ff7eb6]FAST[/]" if not self.show_all else "[#82cfff]ALL[/]"
+            info_text = f"[#42be65]●[/] {mode_text} [#ffffff]{len(self.processes)} processes[/] [#6272a4]│[/] [#82cfff]sort:[/] [#ffffff]{self.sort_by.upper()}[/]"
+
+            if self.show_all and len(self.processes) > self.processes_per_page:
+                total_pages = (len(self.processes) + self.processes_per_page - 1) // self.processes_per_page
+                info_text += f" [#6272a4]│[/] [#be95ff]page:[/] [#ffffff]{self.current_page + 1}/{total_pages}[/]"
+
             if self.search_query:
                 info_text += f" [#6272a4]│[/] [#ff7eb6]filter:[/] [#ffffff]{self.search_query}[/]"
-            self.query_one("#proc-info", Static).update(info_text)
 
+            self.query_one("#proc-info", Static).update(info_text)
         except Exception:
             pass
 
@@ -166,14 +204,32 @@ class ProcessPanel(Static):
             table = self.query_one(DataTable)
             search_input = self.query_one("#search-input", Input)
 
-            # Preserve cursor position
+            # remember which PID the cursor was on (not just the row number)
             cursor_row = table.cursor_row
-            if cursor_row >= len(self.processes):
-                cursor_row = max(0, len(self.processes) - 1)
+            selected_pid = None
+
+            # determine which processes to display based on pagination
+            if self.show_all and len(self.processes) > self.processes_per_page:
+                # ensure current_page is valid
+                total_pages = (len(self.processes) + self.processes_per_page - 1) // self.processes_per_page
+                if self.current_page >= total_pages:
+                    self.current_page = total_pages - 1
+                if self.current_page < 0:
+                    self.current_page = 0
+
+                start_idx = self.current_page * self.processes_per_page
+                end_idx = min(start_idx + self.processes_per_page, len(self.processes))
+                display_procs = self.processes[start_idx:end_idx]
+            else:
+                display_procs = self.processes
+
+            # get the PID of the currently selected process before clearing
+            if 0 <= cursor_row < len(display_procs):
+                selected_pid = display_procs[cursor_row].pid
 
             table.clear()
 
-            for proc in self.processes:
+            for proc in display_procs:
                 if proc.cpu_percent >= 80:
                     cpu_color = "#ee5396"
                 elif proc.cpu_percent >= 50:
@@ -203,9 +259,23 @@ class ProcessPanel(Static):
                     key=str(proc.pid)
                 )
 
-            if len(self.processes) > 0 and cursor_row >= 0:
-                table.move_cursor(row=cursor_row)
-                # Only focus table if search input doesn't have focus
+            # restore cursor to the same PID if it still exists in the list
+            if len(display_procs) > 0:
+                new_cursor_row = 0
+
+                # try to find the previously selected PID in the new list
+                if selected_pid is not None:
+                    for i, proc in enumerate(display_procs):
+                        if proc.pid == selected_pid:
+                            new_cursor_row = i
+                            break
+                    else:
+                        # PID not found, keep cursor at same row or clamp to valid range
+                        new_cursor_row = min(cursor_row, len(display_procs) - 1)
+                        new_cursor_row = max(0, new_cursor_row)
+
+                table.move_cursor(row=new_cursor_row)
+                # only focus table if search input doesn't have focus
                 if not search_input.has_focus:
                     table.focus()
 
@@ -214,14 +284,17 @@ class ProcessPanel(Static):
 
     def action_sort_cpu(self):
         self.sort_by = "cpu"
+        self.current_page = 0  # reset to first page when sort changes
         self.run_worker(self.update_processes())
 
     def action_sort_mem(self):
         self.sort_by = "mem"
+        self.current_page = 0  # reset to first page when sort changes
         self.run_worker(self.update_processes())
 
     def action_sort_pid(self):
         self.sort_by = "pid"
+        self.current_page = 0  # reset to first page when sort changes
         self.run_worker(self.update_processes())
 
     def action_search(self):
@@ -234,9 +307,40 @@ class ProcessPanel(Static):
         self.search_query = ""
         self.query_one(DataTable).focus()
 
+    def action_toggle_show_all(self):
+        self.show_all = not self.show_all
+        self.current_page = 0  # reset to first page when toggling
+        mode_name = "ALL" if self.show_all else "FAST"
+        self.notify(f"[#82cfff]Mode:[/] [#ffffff]{mode_name}[/]", timeout=2)
+        self.run_worker(self.update_processes())
+
+    def action_next_page(self):
+        if not self.show_all or len(self.processes) <= self.processes_per_page:
+            return
+        total_pages = (len(self.processes) + self.processes_per_page - 1) // self.processes_per_page
+        if self.current_page < total_pages - 1:
+            self.current_page += 1
+            self.refresh_table()
+            # move cursor to top of new page
+            table = self.query_one(DataTable)
+            table.move_cursor(row=0)
+            self.update_info_text()
+
+    def action_prev_page(self):
+        if not self.show_all or len(self.processes) <= self.processes_per_page:
+            return
+        if self.current_page > 0:
+            self.current_page -= 1
+            self.refresh_table()
+            # move cursor to top of new page
+            table = self.query_one(DataTable)
+            table.move_cursor(row=0)
+            self.update_info_text()
+
     def on_input_changed(self, event: Input.Changed):
         if event.input.id == "search-input":
             self.search_query = event.value
+            self.current_page = 0  # reset to first page when search changes
             self.run_worker(self.update_processes())
 
     async def action_kill_proc(self):
