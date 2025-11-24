@@ -93,9 +93,9 @@ class ProcessPanel(Static):
             with Container(id="table-container"):
                 yield DataTable(id="proc-table", zebra_stripes=False, show_header=True)
 
-            help_text = "[#42be65][[c]][/]cpu [#42be65][[m]][/]mem [#42be65][[p]][/]pid [#42be65][[/]][/]search"
+            help_text = "[#42be65][q][/]quit [#42be65][x][/]pass [#42be65][c][/]cpu [#42be65][m][/]mem [#42be65][p][/]pid [#42be65][/][/]search [#42be65][esc][/]clear"
             if self.is_admin:
-                help_text += " [#ee5396][[k]][/]kill"
+                help_text += " [#ee5396][k][/]kill"
             yield Static(help_text, id="help-text")
 
     def on_mount(self):

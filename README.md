@@ -25,7 +25,7 @@ a modern, terminal-based system monitor built with python and textual. monitor c
 
 ```bash
 # clone the repo
-git clone <your-repo-url>
+git clone https://github.com/rev-975/cpu_anal
 cd cpu_analysis
 
 # uv will automatically create venv and install dependencies
@@ -36,7 +36,7 @@ uv sync
 
 ```bash
 # clone the repo
-git clone <your-repo-url>
+git clone https://github.com/rev-975/cpu_anal
 cd cpu_analysis
 
 # create virtual environment

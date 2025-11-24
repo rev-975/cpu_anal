@@ -10,17 +10,26 @@ class Database:
         self.db_path = db_path
 
     async def init_db(self):
-        # init db with req tables 
+        # init db with req tables
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS users(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user TEXT UNIQUE NOT NULL,
                     pass_hash TEXT NOT NULL,
-                    is_admin INTEGER NOT NULL DEFAULT 0
+                    is_admin INTEGER NOT NULL DEFAULT 0,
+                    can_view_cpu INTEGER NOT NULL DEFAULT 1,
+                    can_view_memory INTEGER NOT NULL DEFAULT 0,
+                    can_view_processes INTEGER NOT NULL DEFAULT 1,
+                    can_view_network INTEGER NOT NULL DEFAULT 1,
+                    can_kill_processes INTEGER NOT NULL DEFAULT 0,
+                    can_manage_users INTEGER NOT NULL DEFAULT 0
                 )
             """)
             await db.commit()
+
+            # Migrate existing users to have new columns
+            await self._migrate_permissions(db)
 
     async def get_user(self, user: str) -> dict | None:
         # fetch user from username
