@@ -58,9 +58,8 @@ class LoginScreen(Screen):
     """
 
     class LoginSuccess(Message):
-        def __init__(self, user: str, is_admin: bool):
-            self.user = user
-            self.is_admin = is_admin
+        def __init__(self, user_obj):
+            self.user_obj = user_obj
             super().__init__()
 
     def __init__(self):
@@ -114,7 +113,7 @@ class LoginScreen(Screen):
 
         if user:
             error_msg.update("")
-            self.post_message(self.LoginSuccess(user.user, user.is_admin))
+            self.post_message(self.LoginSuccess(user))
         else:
             error_msg.update("invalid user or pass")
             pass_input.value = ""
@@ -132,11 +131,11 @@ class LoginScreen(Screen):
             error_msg.update("enter admin credentials to register users")
             return
 
-        # verify admin credentials
+        # verify user has permission to manage users
         user = await self.user_manager.authenticate(username, pwd)
 
-        if not user or not user.is_admin:
-            error_msg.update("only admins can register users")
+        if not user or not user.can_manage_users:
+            error_msg.update("only users with manage_users permission can register users")
             pass_input.value = ""
             return
 

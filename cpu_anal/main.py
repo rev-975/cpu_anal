@@ -74,10 +74,12 @@ class CPUAnalysisApp(App):
     BINDINGS = [
         ("q", "quit", "quit"),
         ("x", "change_password", "change password"),
+        ("u", "manage_users", "manage users"),
     ]
 
     def __init__(self):
         super().__init__()
+        self.current_user_obj = None
         self.current_user = None
         self.is_admin = False
         self.user_manager = UserManager()
@@ -92,46 +94,61 @@ class CPUAnalysisApp(App):
         yield Footer()
 
     def on_login_screen_login_success(self, message: LoginScreen.LoginSuccess):
-        self.current_user = message.user
-        self.is_admin = message.is_admin
+        self.current_user_obj = message.user_obj
+        self.current_user = message.user_obj.user
+        self.is_admin = message.user_obj.is_admin
         self.pop_screen()
 
         container = self.query_one("#main-container")
         container.remove_children()
 
-        if self.is_admin:
+        # Build layout based on permissions
+        has_top_row = self.current_user_obj.can_view_cpu or self.current_user_obj.can_view_memory
+        has_bottom_row = self.current_user_obj.can_view_network
+
+        if has_top_row:
             top_row = Horizontal(id="top-row")
             container.mount(top_row)
-            top_row.mount(CPUPanel())
-            top_row.mount(MemoryPanel())
+            if self.current_user_obj.can_view_cpu:
+                top_row.mount(CPUPanel())
+            if self.current_user_obj.can_view_memory:
+                top_row.mount(MemoryPanel())
 
+        if self.current_user_obj.can_view_processes:
             middle_row = Horizontal(id="middle-row")
             container.mount(middle_row)
-            middle_row.mount(ProcessPanel(is_admin=True))
+            middle_row.mount(ProcessPanel(
+                is_admin=self.current_user_obj.can_kill_processes,
+                can_manage_users=self.current_user_obj.can_manage_users
+            ))
 
+        if has_bottom_row:
             bottom_row = Horizontal(id="bottom-row")
             container.mount(bottom_row)
             bottom_row.mount(NetworkPanel())
-        else:
-            top_row = Horizontal(id="top-row")
-            container.mount(top_row)
-            top_row.mount(CPUPanel())
 
-            middle_row = Horizontal(id="middle-row")
-            container.mount(middle_row)
-            middle_row.mount(ProcessPanel(is_admin=False))
-
-            bottom_row = Horizontal(id="bottom-row")
-            container.mount(bottom_row)
-            bottom_row.mount(NetworkPanel())
-
+        # Build title with permissions info
         self.title = f"CPU Analysis  •  {self.current_user}"
-        if not self.is_admin:
-            self.title += " (read-only)"
+        perms = []
+        if self.current_user_obj.is_admin:
+            perms.append("admin")
+        if self.current_user_obj.can_kill_processes:
+            perms.append("can kill")
+        if self.current_user_obj.can_manage_users:
+            perms.append("can manage users")
+        if perms:
+            self.title += f" ({', '.join(perms)})"
 
     def action_change_password(self):
         from cpu_anal.widgets.change_password import ChangePasswordScreen
         self.push_screen(ChangePasswordScreen(self.user_manager, self.current_user))
+
+    def action_manage_users(self):
+        if not self.current_user_obj or not self.current_user_obj.can_manage_users:
+            self.notify("permission denied - user management requires can_manage_users permission", severity="error", timeout=3)
+            return
+        from cpu_anal.widgets.manage_users import ManageUsersScreen
+        self.push_screen(ManageUsersScreen(self.user_manager, self.current_user))
 
     def on_change_password_screen_password_changed(self, message):
         self.notify("password changed successfully", timeout=3)

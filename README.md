@@ -81,6 +81,7 @@ on first run, a default admin account is created:
 #### general
 - `q` - quit application
 - `x` - change password
+- `u` - manage users (requires permission)
 - `esc` - close dialogs/clear search
 
 #### process panel
@@ -120,15 +121,33 @@ any user can change their password:
 
 ## permissions
 
-### admin users can:
-- view all panels (cpu, memory, processes, network)
-- kill processes
-- register new users
+the application now supports granular permissions! each user can be assigned specific permissions:
 
-### regular users can:
-- view cpu panel
-- view process list (read-only, cannot kill)
-- view network panel
+### available permissions:
+- **view cpu** - access to cpu monitoring panel
+- **view memory** - access to memory panel
+- **view processes** - access to process list
+- **view network** - access to network stats panel
+- **kill processes** - ability to terminate processes (shown as `[k]kill` in UI)
+- **manage users** - ability to create users and edit permissions (shown as `[u]users` in UI)
+- **admin** - admin status (gives all permissions by default)
+
+### managing permissions:
+1. users with `manage users` permission can press `u` to open user management
+2. use arrow keys or mouse to navigate (scroll down to see all permissions)
+3. select a user from the list
+4. toggle permissions using checkboxes
+5. click "save changes" to apply
+6. press `esc` or `q` or click "close" to exit user management
+
+### default permissions:
+- **admin user** - all permissions enabled (cannot be disabled)
+- **new regular users** - can view cpu, processes, and network (memory viewing disabled by default)
+
+### important notes:
+- users with `admin` status always have all permissions enabled (this cannot be changed)
+- users with `manage users` permission cannot remove their own user management access
+- if you check the `admin` checkbox, all other permissions are automatically enabled
 
 ## troubleshooting
 

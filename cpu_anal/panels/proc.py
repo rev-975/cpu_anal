@@ -80,9 +80,10 @@ class ProcessPanel(Static):
     sort_by: Literal["pid", "cpu", "mem"] = reactive("cpu")
     search_query = reactive("")
 
-    def __init__(self, is_admin: bool = False):
+    def __init__(self, is_admin: bool = False, can_manage_users: bool = False):
         super().__init__()
         self.is_admin = is_admin
+        self.can_manage_users = can_manage_users
         self._ready = False
 
     def compose(self) -> ComposeResult:
@@ -93,9 +94,11 @@ class ProcessPanel(Static):
             with Container(id="table-container"):
                 yield DataTable(id="proc-table", zebra_stripes=False, show_header=True)
 
-            help_text = "[#42be65][q][/]quit [#42be65][x][/]pass [#42be65][c][/]cpu [#42be65][m][/]mem [#42be65][p][/]pid [#42be65][/][/]search [#42be65][esc][/]clear"
+            help_text = "[#42be65][[q]][/]quit [#42be65][[x]][/]pass [#42be65][[c]][/]cpu [#42be65][[m]][/]mem [#42be65][[p]][/]pid [#42be65][[/]][/]search [#42be65][[esc]][/]clear"
             if self.is_admin:
-                help_text += " [#ee5396][k][/]kill"
+                help_text += " [#ee5396][[k]][/]kill"
+            if self.can_manage_users:
+                help_text += " [#82cfff][[u]][/]users"
             yield Static(help_text, id="help-text")
 
     def on_mount(self):
